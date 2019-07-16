@@ -13,9 +13,7 @@ for (let i = 0; i < chars.length; i++) {
 }
 
 export function decode(mappings: string): SourceMapMappings {
-	const decoded: SourceMapMappings = [];
-	let line: SourceMapLine = [];
-	const segment: SourceMapSegment = [
+	const positions: SourceMapSegment = [
 		0, // generated code column
 		0, // source file index
 		0, // source code line
@@ -23,66 +21,68 @@ export function decode(mappings: string): SourceMapMappings {
 		0, // name index
 	];
 
-	let j = 0;
-	for (let i = 0, shift = 0, value = 0; i < mappings.length; i++) {
-		const c = mappings.charCodeAt(i);
+  const decoded = mappings.split(';');
+  for (let i = 0; i < decoded.length; i++) {
+    const lineString = decoded[i];
+    if (lineString === '') {
+      (decoded as unknown as SourceMapMappings)[i] = [];
+      continue;
+    }
 
-		if (c === 44) { // ","
-			segmentify(line, segment, j);
-			j = 0;
+    const line = lineString.split(',');
+    for (let j = 0; j < line.length; j++) {
+      const segment = line[j];
+      let count = 0;
 
-		} else if (c === 59) { // ";"
-			segmentify(line, segment, j);
-			j = 0;
-			decoded.push(line);
-			line = [];
-			segment[0] = 0;
+      for (let k = 0, shift = 0, value = 0; k < segment.length; k++) {
+        const c = segment.charCodeAt(k);
+        let integer = charToInteger[c];
+        if (integer === undefined) {
+          throw new Error('Invalid character (' + String.fromCharCode(c) + ')');
+        }
 
-		} else {
-			let integer = charToInteger[c];
-			if (integer === undefined) {
-				throw new Error('Invalid character (' + String.fromCharCode(c) + ')');
-			}
+        const hasContinuationBit = integer & 32;
 
-			const hasContinuationBit = integer & 32;
+        integer &= 31;
+        value += integer << shift;
 
-			integer &= 31;
-			value += integer << shift;
+        if (hasContinuationBit) {
+          shift += 5;
+        } else {
+          const shouldNegate = value & 1;
+          value >>>= 1;
 
-			if (hasContinuationBit) {
-				shift += 5;
-			} else {
-				const shouldNegate = value & 1;
-				value >>>= 1;
+          if (shouldNegate) {
+            value = value === 0 ? -0x80000000 : -value;
+          }
 
-				if (shouldNegate) {
-					value = value === 0 ? -0x80000000 : -value;
-				}
+          positions[count] += value;
+          count++;
+          value = shift = 0; // reset
+        }
+      }
 
-				segment[j] += value;
-				j++;
-				value = shift = 0; // reset
-			}
-		}
-	}
+			(line as unknown as SourceMapLine)[j] = segmentify(positions, count);
+    }
 
-	segmentify(line, segment, j);
-	decoded.push(line);
+    (decoded as unknown as SourceMapMappings)[i] = line as unknown as SourceMapLine;
+    positions[0] = 0;
+  }
 
-	return decoded;
+	return decoded as unknown as SourceMapMappings;
 }
 
-function segmentify(line: SourceMapSegment[], segment: SourceMapSegment, j: number) {
+function segmentify(positions: SourceMapSegment, count: number): SourceMapSegment {
 	// This looks ugly, but we're creating specialized arrays with a specific
 	// length. This is much faster than creating a new array (which v8 expands to
 	// a capacity of 17 after pushing the first item), or slicing out a subarray
 	// (which is slow). Length 4 is assumed to be the most frequent, followed by
 	// length 5 (since not everything will have an associated name), followed by
 	// length 1 (it's probably rare for a source substring to not have an
-	// associated segment data).
-	if (j === 4) line.push([segment[0], segment[1], segment[2], segment[3]]);
-	else if (j === 5) line.push([segment[0], segment[1], segment[2], segment[3], segment[4]]);
-	else if (j === 1) line.push([segment[0]]);
+	// associated positions data).
+	if (count === 4) return [positions[0], positions[1], positions[2], positions[3]];
+	else if (count === 5) return [positions[0], positions[1], positions[2], positions[3], positions[4]];
+	else if (count === 1) return [positions[0]];
 }
 
 export function encode(decoded: SourceMapMappings): string {
