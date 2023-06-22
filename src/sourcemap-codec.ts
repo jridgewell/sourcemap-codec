@@ -18,25 +18,7 @@ for (let i = 0; i < chars.length; i++) {
 }
 
 // Provide a fallback for older environments.
-const td =
-  typeof TextDecoder !== 'undefined'
-    ? /* #__PURE__ */ new TextDecoder()
-    : typeof Buffer !== 'undefined'
-    ? {
-        decode(buf: Uint8Array) {
-          const out = Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength);
-          return out.toString();
-        },
-      }
-    : {
-        decode(buf: Uint8Array) {
-          let out = '';
-          for (let i = 0; i < buf.length; i++) {
-            out += String.fromCharCode(buf[i]);
-          }
-          return out;
-        },
-      };
+const td = new TextDecoder();
 
 export function decode(mappings: string): SourceMapMappings {
   const state: [number, number, number, number, number] = new Int32Array(5) as any;
