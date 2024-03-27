@@ -8,20 +8,17 @@
   ],
   "main": "dist/sourcemap-codec.umd.js",
   "module": "dist/sourcemap-codec.mjs",
-  "types": "dist/types/sourcemap-codec.d.ts",
+  "types": "dist/sourcemap-codec.umd.d.ts",
   "files": [
     "dist"
   ],
   "exports": {
-    ".": [
-      {
-        "types": "./dist/types/sourcemap-codec.d.ts",
-        "browser": "./dist/sourcemap-codec.umd.js",
-        "require": "./dist/sourcemap-codec.umd.js",
-        "import": "./dist/sourcemap-codec.mjs"
-      },
-      "./dist/sourcemap-codec.umd.js"
-    ],
+    ".": {
+      "import": "./dist/sourcemap-codec.mjs",
+      "browser": "./dist/sourcemap-codec.umd.js",
+      "require": "./dist/sourcemap-codec.umd.js",
+      "default": "./dist/sourcemap-codec.umd.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -30,7 +27,7 @@
     "benchmark:only": "node --expose-gc benchmark/index.js",
     "build": "run-s -n build:*",
     "build:rollup": "rollup -c rollup.config.js",
-    "build:ts": "tsc --project tsconfig.build.json",
+    "build:ts": "tsc --project tsconfig.build.json && cp dist/types/sourcemap-codec.d.ts dist/sourcemap-codec.umd.d.ts && cp dist/types/sourcemap-codec.d.ts dist/sourcemap-codec.d.mts && rm -rf dist/types",
     "lint": "run-s -n lint:*",
     "lint:prettier": "npm run test:lint:prettier -- --write",
     "lint:ts": "npm run test:lint:ts -- --fix",
