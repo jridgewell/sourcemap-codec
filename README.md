@@ -1,3 +1,9 @@
+# Development moved to [monorepo](https://github.com/jridgewell/sourcemaps)
+
+See https://github.com/jridgewell/sourcemaps/tree/main/packages/sourcemap-codec for latest code.
+
+- - -
+
 # @jridgewell/sourcemap-codec
 
 Encode/decode the `mappings` property of a [sourcemap](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit).
